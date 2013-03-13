@@ -2,9 +2,12 @@ require 'chingu'
 include Gosu
 
 class SpaceGame < Chingu::Window
-  def initialize
-    $fullscreen = true
-    super(1440, 900, $fullscreen)
+  def initialize(args)
+    fullscreen = true
+    args.each do |a|
+      fullscreen = false if a == "WINDOW"
+    end
+    super(1440, 900, fullscreen)
   end
   def setup
     switch_game_state(MainState)
@@ -1121,4 +1124,4 @@ class AsteroidChunk < Chingu::GameObject
   end
 end
 
-SpaceGame.new.show
+SpaceGame.new(ARGV).show
