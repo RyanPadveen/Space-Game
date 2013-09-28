@@ -2,9 +2,12 @@ require 'chingu'
 include Gosu
 
 class SpaceGame < Chingu::Window
-  def initialize
-    $fullscreen = true
-    super(1440, 900, $fullscreen)
+  def initialize(args)
+    fullscreen = true
+    args.each do |a|
+      fullscreen = false if a == "WINDOW"
+    end
+    super(1440, 900, fullscreen)
   end
   def setup
     switch_game_state(MainState)
@@ -19,7 +22,7 @@ class MainState < Chingu::GameState
     $lives = 3 #3
     $points = 0 #0
     $wasd = true
-    $player_looping = true
+    $player_looping = false
     $bullet_looping = false #difficult
     $inc_diff = true
     $particles = true
@@ -27,7 +30,6 @@ class MainState < Chingu::GameState
     $parallax = true
     $shootingstars = true
     $starting_base = true
-    #$cursor = true
     $player_speed = 5 #5
     $enemy_speed = 4.5 #4.5
     $bullet_speed = 15 #15
@@ -56,7 +58,7 @@ class MainState < Chingu::GameState
     $base = Gosu::Image['/logo/Base1.png']
     @logo = Gosu::Image['/logo/logo.png']
     @shield = Gosu::Image['/spaceship/Shield.png']
-    $cursor = Gosu::Image['/logo/Crosshair1.png']
+    $cursor = Gosu::Image['/logo/Cursor1.png']
     $powered_up = false
     $invincible = false
     @player = Player.create
@@ -66,7 +68,7 @@ class MainState < Chingu::GameState
       @player.input = {holding_a: :move_left, holding_d: :move_right, holding_w: :move_up, holding_s: :move_down, backspace: :end_game, space: :shoot, holding_space: :laser, mouse_left: :shoot, holding_mouse_left: :laser}
     end
     Gun.create
-    self.input = {l: :toggle_particles, backspace: :exit, esc: :pause}
+    self.input = {l: :toggle_particles, k: :toggle_stars, backspace: :exit, esc: :pause}
     $score = Chingu::Text.create("#{$points}", :x => 25, :y => 30, :zorder => 1000, :factor_x => 1.5, :factor_y => 1.5, :font => "Geneva")
     #$particleamt = Chingu::Text.create("GameObjects: #{Player.size + Enemy.size + PlayerBullet.size + EnemyBullet.size + ExtraLife.size + PowerUp.size + Invincibility.size + Gun.size + Particle.size + Star.size + ShootingStar.size}", :x => 25, :y => 50, :zorder => 1000, :factor_x => 1.2, :factor_y => 1.2, :font => "Geneva")
     #$difficultamt = Chingu::Text.create("Difficulty: #{$difficulty}", :x => 25, :y => 70, :zorder => 1000, :factor_x => 1.2, :factor_y => 1.2, :font => "Geneva")
@@ -75,9 +77,9 @@ class MainState < Chingu::GameState
     #$is_paused = true
     #puts "Enter your name:"
     #$name = gets.chomp
-    $music = Gosu::Song["/music/FA.mp3"]
+    #$music = Gosu::Song["/music/FA.mp3"]
     #$music.volume = 100
-    $music.play(looping = true)
+    #$music.play(looping = true)
   end
   def draw
     super
@@ -95,8 +97,8 @@ class MainState < Chingu::GameState
     #@nose.draw(@player.x + 50, @player.y - @nose.height/2, 0)
     @shield.draw(@player.x - @shield.width/2 - 10, @player.y - @shield.height/2, -100) if $invincible
     #@star[rand(0..3)].draw(rand(0..$window.width), 16, 999) if rand(1..10) == 1
-    $cursor.draw($window.mouse_x-8, $window.mouse_y-8, 1000)
-    $cursor = Gosu::Image['/logo/Crosshair1.png']
+    $cursor.draw($window.mouse_x-$cursor.width/2, $window.mouse_y-$cursor.height/2, 1000)
+    $cursor = Gosu::Image['/logo/Cursor1.png']
     #$window.draw_line($player_x, $player_y, Gosu::Color::WHITE, $window.mouse_x, $window.mouse_y, Gosu::Color::WHITE)
   end
   def update
@@ -198,7 +200,7 @@ class MainState < Chingu::GameState
       $aggression = 1 if $aggression < 1
       $enemy_intel = 1 if $enemy_intel < 1
     end
-    #$cursor = Gosu::Image['/logo/Crosshair1.png']
+    #$cursor = Gosu::Image['/logo/Cursor1.png']
     #if $difficulty % 8500 == 1 && $difficulty > 1
     #  $music.play
     #end
@@ -224,6 +226,10 @@ class MainState < Chingu::GameState
     ShootingStar.destroy_all
     $particles = !$particles
     $shootingstars = !$shootingstars
+  end
+  def toggle_stars
+    Star.destroy_all
+    $stars = !$stars
   end
   def exit
     if $game_over
@@ -555,8 +561,8 @@ class Enemy < Chingu::GameObject
         EnemyBullet.create(self, true)
       end
     end
-    if $window.mouse_x > @x-@image.width && $window.mouse_x < @x+@image.width/2 && $window.mouse_y > @y-@image.height/2 && $window.mouse_y < @y+@image.height/2
-      $cursor = Gosu::Image['/logo/Crosshair2.png']
+    if $window.mouse_x > @x-@image.width && $window.mouse_x < @x+@image.width/2 && $window.mouse_y > @y-@image.height && $window.mouse_y < @y+@image.height
+      $cursor = Gosu::Image['/logo/Cursor2.png']
     end
     if @x <= -@image.width
       @x = $window.width + @image.width
@@ -768,7 +774,7 @@ class EnemyBullet < Chingu::GameObject
       @y += rand(-3..3)
     end
     if $window.mouse_x > @x-@image.width && $window.mouse_x < @x+@image.width/2 && $window.mouse_y > @y-@image.height/2 && $window.mouse_y < @y+@image.height/2
-      $cursor = Gosu::Image['/logo/Crosshair2.png']
+      $cursor = Gosu::Image['/logo/Cursor2.png']
     end
     if @direction == :up
       @y -= $bullet_speed - 4
@@ -1032,7 +1038,7 @@ class Asteroid < Chingu::GameObject
     @x += @x_velocity
     @y += @y_velocity
     if $window.mouse_x > @x-@image.width/2 && $window.mouse_x < @x+@image.width/2 && $window.mouse_y > @y-@image.height/2 && $window.mouse_y < @y+@image.height/2
-      $cursor = Gosu::Image['/logo/Crosshair2.png']
+      $cursor = Gosu::Image['/logo/Cursor2.png']
     end
     @angle += @rot
     #if @xdir > -5 && @xdir < 0
@@ -1068,11 +1074,11 @@ class AsteroidChunk < Chingu::GameObject
     @image = Gosu::Image['/star/Asteroid2.png']
     @natural = natural
     if @natural
-      @spawnSide = rand(1..3) #1:top|2:bottom|3:right|4:left
+      spawnSide = rand(1..3) #1:top|2:bottom|3:right|4:left
       #@xdir = 0
       #@ydir = 0
       #@offset = rand(-5..5)
-      case @spawnSide
+      case spawnSide
         when 1
           @x = rand(0..$window.width)
           @y = -@image.height
@@ -1108,7 +1114,7 @@ class AsteroidChunk < Chingu::GameObject
     @x += @x_velocity
     @y += @y_velocity
     if $window.mouse_x > @x-@image.width/2 && $window.mouse_x < @x+@image.width/2 && $window.mouse_y > @y-@image.height/2 && $window.mouse_y < @y+@image.height/2
-      $cursor = Gosu::Image['/logo/Crosshair2.png']
+      $cursor = Gosu::Image['/logo/Cursor2.png']
     end
     @angle += @rot
     destroy if @x < -@image.width
@@ -1121,4 +1127,4 @@ class AsteroidChunk < Chingu::GameObject
   end
 end
 
-SpaceGame.new.show
+SpaceGame.new(ARGV).show
